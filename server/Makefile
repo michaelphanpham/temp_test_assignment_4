@@ -2,7 +2,7 @@ TARGET = aesdsocket
 
 CC = $(CROSS_COMPILE)gcc
 
-CFLAGS = -Wall -Werror -Wextra -g -O0
+CFLAGS = -Wall -Werror -Wextra -g3 -O0 -ggdb
 
 LDFLAGS = 
 
