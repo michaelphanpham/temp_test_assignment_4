@@ -8,21 +8,26 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <errno.h>
+#include <sys/types.h>
 
-int client_sock;
-int serv_sock;
+int client_sock = -1;
+int serv_sock = -1;
 
-void handle_sigchld(int sig) {
-    // Wait for all dead child processes to avoid zombie processes
-    // Check serv_sock is still open before closing
-    (void)sig; // Unused parameter
-    shutdown(serv_sock, SHUT_RDWR);
-    shutdown(client_sock, SHUT_RDWR);
-
+void handle_signal(int sig) {
+    (void)sig;
+    
+    if (serv_sock >= 0) {
+        close(serv_sock);
+    }
+    if (client_sock >= 0) {
+        close(client_sock);
+    }
+    
     syslog(LOG_DEBUG, "Caught signal, exiting");
-
-    // remove the file if it exists
     remove("/var/tmp/aesdsocketdata");
+    closelog();
     exit(EXIT_SUCCESS);
 }
 
@@ -95,8 +100,8 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
     // Register signal handler for SIGCHLD
-    signal(SIGINT, handle_sigchld);
-    signal(SIGTERM, handle_sigchld);
+    signal(SIGINT, handle_signal);
+    signal(SIGTERM, handle_signal);
 
     while (1) {
         client_sock = accept(serv_sock, (struct sockaddr*)&client_addr, &client_len);
